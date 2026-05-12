@@ -121,8 +121,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         label: 'Toppliste',
       ),
       const NavigationDestination(
-        icon: Icon(Icons.gavel_rounded),
-        label: 'Anker',
+        icon: Icon(Icons.monitor_rounded),
+        label: 'VAR',
       ),
       if (isAdmin)
         const NavigationDestination(

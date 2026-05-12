@@ -8,6 +8,7 @@ import '../services/payment_service.dart';
 import '../models/appeal.dart';
 import '../models/fine.dart';
 import '../theme.dart';
+import '../widgets/var_animation.dart';
 
 class CreateAppealScreen extends ConsumerStatefulWidget {
   final Fine fine;
@@ -22,6 +23,7 @@ class _CreateAppealScreenState extends ConsumerState<CreateAppealScreen> {
   XFile? _evidence;
   EvidenceType _type = EvidenceType.text;
   bool _isSubmitting = false;
+  bool _showVarAnimation = false;
 
   Future<void> _pickEvidence(EvidenceType type) async {
     final ImagePicker picker = ImagePicker();
@@ -48,8 +50,6 @@ class _CreateAppealScreenState extends ConsumerState<CreateAppealScreen> {
     try {
       // 1. Trigger Payment (9,-)
       final payment = ref.read(paymentServiceProvider);
-      // In real app: await payment.purchaseProduct('anke_9kr');
-      // For now, we simulate success or show paywall
       if (!kIsWeb) {
         await payment.presentPaywall();
       }
@@ -80,87 +80,98 @@ class _CreateAppealScreenState extends ConsumerState<CreateAppealScreen> {
 
       await ref.read(firestoreServiceProvider).createAppeal(appeal);
 
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Anke sendt! Laget har 24 timer på å stemme.')),
-        );
-      }
+      // 4. Trigger VAR Animation
+      setState(() {
+        _isSubmitting = false;
+        _showVarAnimation = true;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Feil ved sending av anke: $e')),
+          SnackBar(content: Text('Feil ved VAR-sjekk: $e')),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      setState(() => _isSubmitting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Anke på bot')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildFineSummary(),
-            const SizedBox(height: 32),
-            const Text('Hvorfor er denne boten feil?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _reasonController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Skriv din forklaring her...',
-                filled: true,
-                fillColor: Colors.grey[100],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 32),
-            const Text('Legg til bevis (Video/Bilde)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 12),
-            Row(
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(title: const Text('VAR-SJEKK')),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildEvidenceButton(Icons.image, 'Bilde', EvidenceType.image),
-                const SizedBox(width: 16),
-                _buildEvidenceButton(Icons.videocam, 'Video', EvidenceType.video),
-              ],
-            ),
-            if (_evidence != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                height: 100,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppTheme.accentLime.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Row(
+                _buildFineSummary(),
+                const SizedBox(height: 32),
+                const Text('Hvorfor roper du på VAR?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _reasonController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Beskriv situasjonen her...',
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Text('Last opp bevis (KREVER VIDEO/BILDE)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    Icon(_type == EvidenceType.video ? Icons.movie : Icons.image, color: Colors.black),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(_evidence!.name, overflow: TextOverflow.ellipsis)),
-                    IconButton(onPressed: () => setState(() => _evidence = null), icon: const Icon(Icons.close)),
+                    _buildEvidenceButton(Icons.image, 'Bilde', EvidenceType.image),
+                    const SizedBox(width: 16),
+                    _buildEvidenceButton(Icons.videocam, 'Video', EvidenceType.video),
                   ],
                 ),
-              ),
-            ],
-            const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              height: 60,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitAppeal,
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                child: _isSubmitting 
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('SEND ANKE (9,- kr)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
+                if (_evidence != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    height: 100,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: AppTheme.accentLime.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                    child: Row(
+                      children: [
+                        Icon(_type == EvidenceType.video ? Icons.movie : Icons.image, color: Colors.black),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(_evidence!.name, overflow: TextOverflow.ellipsis)),
+                        IconButton(onPressed: () => setState(() => _evidence = null), icon: const Icon(Icons.close)),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 48),
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _submitAppeal,
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                    child: _isSubmitting 
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('SEND TIL VAR-SJEKK (9,- kr)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        if (_showVarAnimation)
+          VarAnimationOverlay(
+            onFinished: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('VAR-sjekk er i gang! Dommerpanelet har 24 timer.')),
+              );
+            },
+          ),
+      ],
     );
   }
 
