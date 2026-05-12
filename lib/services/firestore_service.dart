@@ -148,6 +148,14 @@ class FirestoreService {
   }
 
   // Fine Types
+  Future<void> addFineType(FineType type) async {
+    await _db.collection('fineTypes').doc(type.id).set(type.toMap());
+  }
+
+  Future<void> deleteFineType(String typeId) async {
+    await _db.collection('fineTypes').doc(typeId).delete();
+  }
+
   Stream<List<FineType>> streamFineTypes() {
     return _db.collection('fineTypes').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => FineType.fromFirestore(doc)).toList();

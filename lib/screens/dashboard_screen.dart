@@ -5,6 +5,8 @@ import '../models/fine.dart';
 import '../models/user.dart';
 import '../services/firestore_service.dart';
 
+import 'fine_types_screen.dart';
+
 import 'create_appeal_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -13,11 +15,12 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final finesAsync = ref.watch(teamFinesProvider);
+    final profile = ref.watch(userProfileProvider).value;
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          _buildAppBar(context),
+          _buildAppBar(context, profile),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -39,7 +42,7 @@ class DashboardScreen extends ConsumerWidget {
                   )
                 : SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildFineItem(context, fines[index]),
+                      (context, index) => _buildFineItem(context, ref, fines[index]),
                       childCount: fines.length,
                     ),
                   ),
@@ -52,20 +55,28 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildAppBar(BuildContext context, AppUser? profile) {
     return SliverAppBar(
       title: const Text('Botkassa'),
       floating: true,
       actions: [
+        if (profile?.role == UserRole.admin)
+          IconButton(
+            onPressed: () => Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (context) => const FineTypesScreen())
+            ),
+            icon: const Icon(Icons.settings_outlined, color: Colors.black54),
+          ),
         IconButton(
           onPressed: () {},
           icon: const Icon(Icons.account_balance_wallet_rounded, color: AppTheme.primaryBlue),
         ),
       ],
-      leading: const Padding(
-        padding: EdgeInsets.all(8.0),
+      leading: Padding(
+        padding: const EdgeInsets.all(8.0),
         child: CircleAvatar(
-          backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=admin'),
+          backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=${profile?.id ?? "admin"}'),
         ),
       ),
     );
@@ -115,7 +126,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFineItem(BuildContext context, Fine fine) {
+  Widget _buildFineItem(BuildContext context, WidgetRef ref, Fine fine) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Padding(

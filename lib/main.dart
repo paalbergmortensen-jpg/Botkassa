@@ -84,29 +84,57 @@ class BotkassaApp extends ConsumerWidget {
   }
 }
 
-class MainNavigationScreen extends StatefulWidget {
+class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  ConsumerState<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _selectedIndex = 0;
-
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const LeaderboardScreen(),
-    const AddFineScreen(),
-    const ActiveAppealsScreen(),
-  ];
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileProvider).value;
+    final isAdmin = profile?.role == UserRole.admin;
+
+    final List<Widget> screens = [
+      const DashboardScreen(),
+      const LeaderboardScreen(),
+      const ActiveAppealsScreen(),
+      if (isAdmin) const AddFineScreen(),
+    ];
+
+    final destinations = [
+      const NavigationDestination(
+        icon: Icon(Icons.grid_view_rounded),
+        label: 'Oversikt',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.bar_chart_rounded),
+        label: 'Toppliste',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.gavel_rounded),
+        label: 'Anker',
+      ),
+      if (isAdmin)
+        const NavigationDestination(
+          icon: Icon(Icons.add_circle_outline_rounded),
+          label: 'Gi bot',
+        ),
+    ];
+
+    // Safety check for index out of bounds
+    if (_selectedIndex >= screens.length) {
+      _selectedIndex = 0;
+    }
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -125,24 +153,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               _selectedIndex = index;
             });
           },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.grid_view_rounded),
-              label: 'Oversikt',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.bar_chart_rounded),
-              label: 'Toppliste',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.add_circle_outline_rounded),
-              label: 'Legg til',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.gavel_rounded),
-              label: 'Anker',
-            ),
-          ],
+          destinations: destinations,
         ),
       ),
     );

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +8,7 @@ import '../models/fine.dart';
 import '../models/user.dart';
 import '../models/fine_type.dart';
 import '../theme.dart';
+import 'fine_types_screen.dart';
 
 class AddFineScreen extends ConsumerStatefulWidget {
   const AddFineScreen({super.key});
@@ -17,24 +17,13 @@ class AddFineScreen extends ConsumerStatefulWidget {
   ConsumerState<AddFineScreen> createState() => _AddFineScreenState();
 }
 
+import 'fine_types_screen.dart';
+
 class _AddFineScreenState extends ConsumerState<AddFineScreen> {
   AppUser? _selectedPlayer;
   FineType? _selectedType;
   XFile? _image;
   bool _isUploading = false;
-
-  final List<FineType> _fineTypes = [
-    FineType(id: '1', name: 'Sen til trening', price: 50, icon: 'timer'),
-    FineType(id: '2', name: 'Glemt utstyr', price: 30, icon: 'checkroom'),
-    FineType(id: '3', name: 'Mobilbruk', price: 100, icon: 'phone_android'),
-    FineType(id: '4', name: 'Dårlig vits', price: 10, icon: 'sentiment_very_dissatisfied'),
-  ];
-
-  final List<AppUser> _mockPlayers = [
-    AppUser(id: '1', name: 'Erik', role: UserRole.player, balance: 150),
-    AppUser(id: '2', name: 'Mats', role: UserRole.player, balance: 50),
-    AppUser(id: '3', name: 'Sara', role: UserRole.player, balance: 0),
-  ];
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
@@ -75,9 +64,7 @@ class _AddFineScreenState extends ConsumerState<AddFineScreen> {
       evidenceUrl: imageUrl,
     );
 
-    if (!kIsWeb) {
-      await firestore.addFine(fine);
-    }
+    await firestore.addFine(fine);
 
     setState(() => _isUploading = false);
     
@@ -139,82 +126,94 @@ class _AddFineScreenState extends ConsumerState<AddFineScreen> {
   }
 
   Widget _buildPlayerSelector() {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: _mockPlayers.map((player) {
-        final isSelected = _selectedPlayer?.id == player.id;
-        return InkWell(
-          onTap: () => setState(() => _selectedPlayer = player),
-          child: Column(
-            children: [
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected ? AppTheme.primaryBlue : Colors.grey.withOpacity(0.3),
-                    width: 3,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 33,
-                  backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=${player.id}'),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                player.name,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? AppTheme.primaryBlue : Colors.black,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
+    final playersAsync = ref.watch(teamLeaderboardProvider);
 
-  Widget _buildFineTypeSelector() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: 1.5,
-      children: _fineTypes.map((type) {
-        final isSelected = _selectedType?.id == type.id;
-        return InkWell(
-          onTap: () => setState(() => _selectedType = type),
-          child: Card(
-            color: isSelected ? AppTheme.primaryBlue : Colors.white,
+    return playersAsync.when(
+      data: (players) => Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        children: players.map((player) {
+          final isSelected = _selectedPlayer?.id == player.id;
+          return InkWell(
+            onTap: () => setState(() => _selectedPlayer = player),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  type.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : Colors.black,
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? AppTheme.primaryBlue : Colors.grey.withOpacity(0.3),
+                      width: 3,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 33,
+                    backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=${player.id}'),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
-                  '${type.price},-',
+                  player.name,
                   style: TextStyle(
-                    color: isSelected ? AppTheme.accentLime : AppTheme.primaryBlue,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? AppTheme.primaryBlue : Colors.black,
                   ),
                 ),
               ],
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('Feil: $e')),
+    );
+  }
+
+  Widget _buildFineTypeSelector() {
+    final typesAsync = ref.watch(fineTypesProvider);
+
+    return typesAsync.when(
+      data: (types) => GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.5,
+        children: types.map((type) {
+          final isSelected = _selectedType?.id == type.id;
+          return InkWell(
+            onTap: () => setState(() => _selectedType = type),
+            child: Card(
+              color: isSelected ? AppTheme.primaryBlue : Colors.white,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    type.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${type.price.toInt()},-',
+                    style: TextStyle(
+                      color: isSelected ? AppTheme.accentLime : AppTheme.primaryBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('Feil: $e')),
     );
   }
 
@@ -232,9 +231,7 @@ class _AddFineScreenState extends ConsumerState<AddFineScreen> {
         child: _image != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: kIsWeb 
-                  ? Image.network(_image!.path, fit: BoxFit.cover)
-                  : Image.file(File(_image!.path), fit: BoxFit.cover),
+                child: _getImageWidget(),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -246,5 +243,9 @@ class _AddFineScreenState extends ConsumerState<AddFineScreen> {
               ),
       ),
     );
+  }
+
+  Widget _getImageWidget() {
+    return Image.network(_image!.path, fit: BoxFit.cover);
   }
 }
