@@ -1,0 +1,38 @@
+name: botkassa
+description: A new Flutter project for managing team fines.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  firebase_core: ^3.1.0
+  firebase_auth: ^5.1.0
+  cloud_firestore: ^5.0.1
+  firebase_storage: ^12.0.1
+  flutter_riverpod: ^2.5.1
+  purchases_flutter: ^7.0.0
+  purchases_ui_flutter: ^7.0.0
+  google_sign_in: ^6.2.1
+  camera: ^0.11.0
+  path_provider: ^2.1.3
+  url_launcher: ^6.3.0
+  google_fonts: ^6.2.1
+  intl: ^0.19.0
+  animations: ^2.0.11
+  flutter_svg: ^2.0.10+1
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - assets/images/
