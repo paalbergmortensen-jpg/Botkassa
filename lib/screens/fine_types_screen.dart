@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/fine_type.dart';
+import '../models/user.dart';
 import '../services/firestore_service.dart';
 import '../theme.dart';
 
@@ -15,6 +16,13 @@ class FineTypesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Administrer Bøter'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_fix_high_rounded),
+            tooltip: 'Gjenopprett test-data',
+            onPressed: () => _seedTestData(ref),
+          ),
+        ],
       ),
       body: typesAsync.when(
         data: (types) => ListView.builder(
@@ -66,7 +74,7 @@ class FineTypesScreen extends ConsumerWidget {
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Navn på bot (f.svg. Sen til trening)'),
+              decoration: const InputDecoration(labelText: 'Navn på bot (f.eks. Sen til trening)'),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -106,6 +114,33 @@ class FineTypesScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _seedTestData(WidgetRef ref) async {
+    final firestore = ref.read(firestoreServiceProvider);
+    
+    // Add mock players to the permanent database
+    final players = [
+      AppUser(id: 'web-test-user', name: 'Botsjef (Web)', role: UserRole.admin, balance: 0, teamId: 'test-team-123'),
+      AppUser(id: '1', name: 'Erik', role: UserRole.player, balance: 150, teamId: 'test-team-123'),
+      AppUser(id: '2', name: 'Mats', role: UserRole.player, balance: 50, teamId: 'test-team-123'),
+      AppUser(id: '3', name: 'Sara', role: UserRole.player, balance: 0, teamId: 'test-team-123'),
+    ];
+
+    for (var p in players) {
+      await firestore.updateUser(p);
+    }
+
+    // Add some default fine types
+    final types = [
+      FineType(id: 't1', name: 'For sent til trening', price: 50, icon: '⏰'),
+      FineType(id: 't2', name: 'Glemt utstyr', price: 30, icon: '👕'),
+      FineType(id: 't3', name: 'Tunnel', price: 10, icon: '⚽'),
+    ];
+
+    for (var t in types) {
+      await firestore.addFineType(t);
+    }
   }
 }
 

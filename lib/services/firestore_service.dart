@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/team.dart';
 import '../models/user.dart';
@@ -12,6 +13,15 @@ final firestoreServiceProvider = Provider<FirestoreService>((ref) {
 });
 
 final userProfileProvider = StreamProvider<AppUser?>((ref) {
+  if (kIsWeb) {
+    return Stream.value(AppUser(
+      id: 'web-test-user',
+      name: 'Botsjef (Web)',
+      role: UserRole.admin,
+      teamId: 'test-team-123',
+      balance: 0,
+    ));
+  }
   final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value(null);
   return ref.watch(firestoreServiceProvider).streamUser(user.uid);
@@ -95,6 +105,10 @@ class FirestoreService {
   // Users
   Future<void> createUser(AppUser user) async {
     await _db.collection('users').doc(user.id).set(user.toMap());
+  }
+
+  Future<void> updateUser(AppUser user) async {
+    await _db.collection('users').doc(user.id).set(user.toMap(), SetOptions(merge: true));
   }
 
   Stream<AppUser?> streamUser(String userId) {

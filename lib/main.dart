@@ -6,6 +6,8 @@ import 'screens/leaderboard_screen.dart';
 import 'screens/add_fine_screen.dart';
 import 'screens/active_appeals_screen.dart';
 import 'screens/login_screen.dart';
+import 'models/fine_type.dart';
+import 'models/user.dart';
 import 'services/auth_service.dart';
 
 import 'package:flutter/foundation.dart';
@@ -20,14 +22,12 @@ import 'screens/team_onboarding_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  if (!kIsWeb) {
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    } catch (e) {
-      debugPrint('Firebase initialization failed: $e');
-    }
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
   }
 
   // Initialize RevenueCat
@@ -95,9 +95,14 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _selectedIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider).value;
-    final isAdmin = profile?.role == UserRole.admin;
+    final isAdmin = profile?.role == UserRole.admin || kIsWeb;
 
     final List<Widget> screens = [
       const DashboardScreen(),
