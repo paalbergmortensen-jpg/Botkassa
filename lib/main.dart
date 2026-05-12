@@ -4,7 +4,7 @@ import 'theme.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/add_fine_screen.dart';
-import 'screens/appeals_screen.dart';
+import 'screens/active_appeals_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 
@@ -98,7 +98,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const DashboardScreen(),
     const LeaderboardScreen(),
     const AddFineScreen(),
-    const AppealsScreen(),
+    const ActiveAppealsScreen(),
   ];
 
   @override

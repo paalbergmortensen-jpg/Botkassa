@@ -4,6 +4,7 @@ enum FineStatus { unpaid, paid, appealed, deleted }
 
 class Fine {
   final String id;
+  final String teamId;
   final String userId;
   final String userName;
   final DateTime date;
@@ -15,6 +16,7 @@ class Fine {
 
   Fine({
     required this.id,
+    required this.teamId,
     required this.userId,
     required this.userName,
     required this.date,
@@ -28,6 +30,7 @@ class Fine {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'teamId': teamId,
       'userId': userId,
       'userName': userName,
       'date': Timestamp.fromDate(date),
@@ -43,6 +46,7 @@ class Fine {
     Map data = doc.data() as Map;
     return Fine(
       id: doc.id,
+      teamId: data['teamId'] ?? '',
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? '',
       date: (data['date'] as Timestamp).toDate(),

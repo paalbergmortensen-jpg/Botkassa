@@ -47,6 +47,9 @@ class _AddFineScreenState extends ConsumerState<AddFineScreen> {
   Future<void> _submitFine() async {
     if (_selectedPlayer == null || _selectedType == null) return;
 
+    final profile = ref.read(userProfileProvider).value;
+    if (profile == null || profile.teamId == null) return;
+
     setState(() => _isUploading = true);
 
     final firestore = ref.read(firestoreServiceProvider);
@@ -61,6 +64,7 @@ class _AddFineScreenState extends ConsumerState<AddFineScreen> {
 
     final fine = Fine(
       id: fineId,
+      teamId: profile.teamId!,
       userId: _selectedPlayer!.id,
       userName: _selectedPlayer!.name,
       typeId: _selectedType!.id,

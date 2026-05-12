@@ -4,6 +4,7 @@ import '../models/team.dart';
 import '../models/user.dart';
 import '../models/fine.dart';
 import '../models/fine_type.dart';
+import '../models/appeal.dart';
 import 'auth_service.dart';
 
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
@@ -14,6 +15,24 @@ final userProfileProvider = StreamProvider<AppUser?>((ref) {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value(null);
   return ref.watch(firestoreServiceProvider).streamUser(user.uid);
+});
+
+final teamFinesProvider = StreamProvider<List<Fine>>((ref) {
+  final profile = ref.watch(userProfileProvider).value;
+  if (profile == null || profile.teamId == null) return Stream.value([]);
+  return ref.watch(firestoreServiceProvider).streamFines(profile.teamId!);
+});
+
+final teamLeaderboardProvider = StreamProvider<List<AppUser>>((ref) {
+  final profile = ref.watch(userProfileProvider).value;
+  if (profile == null || profile.teamId == null) return Stream.value([]);
+  return ref.watch(firestoreServiceProvider).streamTeamPlayers(profile.teamId!);
+});
+
+final teamAppealsProvider = StreamProvider<List<Appeal>>((ref) {
+  final profile = ref.watch(userProfileProvider).value;
+  if (profile == null || profile.teamId == null) return Stream.value([]);
+  return ref.watch(firestoreServiceProvider).streamAppeals(profile.teamId!);
 });
 
 class FirestoreService {
@@ -99,13 +118,33 @@ class FirestoreService {
   }
 
   Stream<List<Fine>> streamFines(String teamId) {
-    // This assumes we have a way to filter fines by team (e.g. by users in the team)
-    // For simplicity, we might want to add teamId to Fine model too
     return _db
         .collection('fines')
+        .where('teamId', isEqualTo: teamId)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => Fine.fromFirestore(doc)).toList());
+  }
+
+  // Appeals
+  Future<void> createAppeal(Appeal appeal) async {
+    await _db.collection('appeals').doc(appeal.id).set(appeal.toMap());
+  }
+
+  Future<void> voteOnAppeal(String appealId, String userId, bool isFor) async {
+    final field = isFor ? 'votesFor' : 'votesAgainst';
+    await _db.collection('appeals').doc(appealId).update({
+      field: FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  Stream<List<Appeal>> streamAppeals(String teamId) {
+    return _db
+        .collection('appeals')
+        .where('teamId', isEqualTo: teamId)
+        .where('status', isEqualTo: AppealStatus.pending.index)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Appeal.fromFirestore(doc)).toList());
   }
 
   // Fine Types
